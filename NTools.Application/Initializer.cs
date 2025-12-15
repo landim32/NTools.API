@@ -19,8 +19,9 @@ namespace NTools.Application
             services.AddHttpClient();
 
             injectDependency(typeof(IFileService), typeof(FileService), services, scoped);
-            injectDependency(typeof(IMailerSendService), typeof(MailerSendService), services, scoped);
-
+            
+            // Registra MailerSendService com HttpClient tipado
+            services.AddHttpClient<IMailerSendService, MailerSendService>();
         }
     }
 }

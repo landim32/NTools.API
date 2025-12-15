@@ -12,12 +12,12 @@ namespace NTools.Tests.Domain.Services
     /// <summary>
     /// Integration-style tests for MailerSendService
     /// Note: These tests verify the behavior and structure of the service
-    /// For full HTTP mocking, consider refactoring MailerSendService to accept IHttpClientFactory
     /// </summary>
     public class MailerSendServiceIntegrationTests
     {
         private readonly Mock<IOptions<MailerSendSetting>> _mockMailSettings;
         private readonly MailerSendSetting _mailSetting;
+        private readonly HttpClient _httpClient;
 
         public MailerSendServiceIntegrationTests()
         {
@@ -30,6 +30,8 @@ namespace NTools.Tests.Domain.Services
 
             _mockMailSettings = new Mock<IOptions<MailerSendSetting>>();
             _mockMailSettings.Setup(x => x.Value).Returns(_mailSetting);
+
+            _httpClient = new HttpClient();
         }
 
         private static MailerInfo CreateValidMailerInfo()
@@ -59,7 +61,7 @@ namespace NTools.Tests.Domain.Services
         public void Service_Constructor_InitializesWithSettings()
         {
             // Act
-            var service = new MailerSendService(_mockMailSettings.Object);
+            var service = new MailerSendService(_httpClient, _mockMailSettings.Object);
 
             // Assert
             Assert.NotNull(service);
@@ -80,7 +82,7 @@ namespace NTools.Tests.Domain.Services
             var mockSettings = new Mock<IOptions<MailerSendSetting>>();
             mockSettings.Setup(x => x.Value).Returns(invalidSettings);
             
-            var service = new MailerSendService(mockSettings.Object);
+            var service = new MailerSendService(_httpClient, mockSettings.Object);
             var mailerInfo = CreateValidMailerInfo();
 
             // Act & Assert
@@ -105,7 +107,7 @@ namespace NTools.Tests.Domain.Services
             var mockSettings = new Mock<IOptions<MailerSendSetting>>();
             mockSettings.Setup(x => x.Value).Returns(invalidSettings);
             
-            var service = new MailerSendService(mockSettings.Object);
+            var service = new MailerSendService(_httpClient, mockSettings.Object);
             var mailerInfo = CreateValidMailerInfo();
 
             // Act & Assert

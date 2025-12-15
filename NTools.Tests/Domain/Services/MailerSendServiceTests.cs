@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using Moq;
+using Moq.Protected;
 using Newtonsoft.Json;
 using NTools.Domain.Services;
 using NTools.DTO.MailerSend;
@@ -14,6 +15,7 @@ namespace NTools.Tests.Domain.Services
     {
         private readonly Mock<IOptions<MailerSendSetting>> _mockMailSettings;
         private readonly MailerSendSetting _mailSetting;
+        private readonly HttpClient _httpClient;
 
         public MailerSendServiceTests()
         {
@@ -26,6 +28,9 @@ namespace NTools.Tests.Domain.Services
 
             _mockMailSettings = new Mock<IOptions<MailerSendSetting>>();
             _mockMailSettings.Setup(x => x.Value).Returns(_mailSetting);
+
+            // Create a real HttpClient for testing
+            _httpClient = new HttpClient();
         }
 
         private static MailerInfo CreateTestMailerInfo()
@@ -55,15 +60,213 @@ namespace NTools.Tests.Domain.Services
         public void Constructor_WithValidSettings_InitializesSuccessfully()
         {
             // Act
-            var service = new MailerSendService(_mockMailSettings.Object);
+            var service = new MailerSendService(_httpClient, _mockMailSettings.Object);
 
             // Assert
             Assert.NotNull(service);
         }
 
-        // Note: The current implementation doesn't validate null settings in constructor
-        // This would throw a NullReferenceException at runtime when Sendmail is called
-        // Consider adding validation in the constructor for better fail-fast behavior
+        [Fact]
+        public void Constructor_WithNullHttpClient_ThrowsArgumentNullException()
+        {
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => new MailerSendService(null, _mockMailSettings.Object));
+        }
+
+        [Fact]
+        public void Constructor_WithNullSettings_ThrowsArgumentNullException()
+        {
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => new MailerSendService(_httpClient, null));
+        }
+
+        [Fact]
+        public async Task Sendmail_WhenApiReturnsErrorWithMessage_ThrowsInvalidOperationExceptionWithMessage()
+        {
+            // Arrange
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var errorResponse = new MailerErrorInfo
+            {
+                Message = "Validation failed",
+                Errors = new Dictionary<string, IList<string>>
+                {
+                    { "to", new List<string> { "The to field is required" } }
+                }
+            };
+            var errorJson = JsonConvert.SerializeObject(errorResponse);
+            
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Content = new StringContent(errorJson)
+                });
+
+            var httpClient = new HttpClient(mockHandler.Object);
+            var service = new MailerSendService(httpClient, _mockMailSettings.Object);
+            var mailerInfo = CreateTestMailerInfo();
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await service.Sendmail(mailerInfo));
+            
+            Assert.Equal("Validation failed", exception.Message);
+        }
+
+        [Fact]
+        public async Task Sendmail_WhenApiReturnsErrorWithoutMessage_ThrowsInvalidOperationExceptionWithUnknownError()
+        {
+            // Arrange
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var errorResponse = new MailerErrorInfo
+            {
+                Message = null,
+                Errors = new Dictionary<string, IList<string>>()
+            };
+            var errorJson = JsonConvert.SerializeObject(errorResponse);
+            
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.InternalServerError,
+                    Content = new StringContent(errorJson)
+                });
+
+            var httpClient = new HttpClient(mockHandler.Object);
+            var service = new MailerSendService(httpClient, _mockMailSettings.Object);
+            var mailerInfo = CreateTestMailerInfo();
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await service.Sendmail(mailerInfo));
+            
+            Assert.Equal("Unknown error", exception.Message);
+        }
+
+        [Fact]
+        public async Task Sendmail_WhenApiReturnsErrorWithEmptyMessage_ThrowsInvalidOperationExceptionWithUnknownError()
+        {
+            // Arrange
+            var mockHandler = new Mock<HttpMessageHandler>();
+            var errorResponse = new MailerErrorInfo
+            {
+                Message = "",
+                Errors = new Dictionary<string, IList<string>>()
+            };
+            var errorJson = JsonConvert.SerializeObject(errorResponse);
+            
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Content = new StringContent(errorJson)
+                });
+
+            var httpClient = new HttpClient(mockHandler.Object);
+            var service = new MailerSendService(httpClient, _mockMailSettings.Object);
+            var mailerInfo = CreateTestMailerInfo();
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await service.Sendmail(mailerInfo));
+            
+            Assert.Equal("Unknown error", exception.Message);
+        }
+
+        [Fact]
+        public async Task Sendmail_WhenApiReturnsInvalidJson_ThrowsException()
+        {
+            // Arrange
+            var mockHandler = new Mock<HttpMessageHandler>();
+            
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Content = new StringContent("Invalid JSON response")
+                });
+
+            var httpClient = new HttpClient(mockHandler.Object);
+            var service = new MailerSendService(httpClient, _mockMailSettings.Object);
+            var mailerInfo = CreateTestMailerInfo();
+
+            // Act & Assert
+            // When JSON is invalid, JsonConvert throws before we can handle the error
+            await Assert.ThrowsAnyAsync<Exception>(
+                async () => await service.Sendmail(mailerInfo));
+        }
+
+        [Fact]
+        public async Task Sendmail_WhenApiReturnsNullErrorObject_ThrowsInvalidOperationExceptionWithUnknownError()
+        {
+            // Arrange
+            var mockHandler = new Mock<HttpMessageHandler>();
+            
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.BadRequest,
+                    Content = new StringContent("null")
+                });
+
+            var httpClient = new HttpClient(mockHandler.Object);
+            var service = new MailerSendService(httpClient, _mockMailSettings.Object);
+            var mailerInfo = CreateTestMailerInfo();
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await service.Sendmail(mailerInfo));
+            
+            Assert.Equal("Unknown error", exception.Message);
+        }
+
+        [Fact]
+        public async Task Sendmail_WhenApiReturnsSuccess_ReturnsTrue()
+        {
+            // Arrange
+            var mockHandler = new Mock<HttpMessageHandler>();
+            
+            mockHandler.Protected()
+                .Setup<Task<HttpResponseMessage>>(
+                    "SendAsync",
+                    ItExpr.IsAny<HttpRequestMessage>(),
+                    ItExpr.IsAny<CancellationToken>())
+                .ReturnsAsync(new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new StringContent("{}")
+                });
+
+            var httpClient = new HttpClient(mockHandler.Object);
+            var service = new MailerSendService(httpClient, _mockMailSettings.Object);
+            var mailerInfo = CreateTestMailerInfo();
+
+            // Act
+            var result = await service.Sendmail(mailerInfo);
+
+            // Assert
+            Assert.True(result);
+        }
 
         [Fact]
         public void CreateMailerInfo_WithAllFields_CreatesValidObject()
