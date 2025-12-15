@@ -20,8 +20,8 @@ services:
       - .env
     restart: unless-stopped
     networks:
-      - ntools-network
+      - emagine-network
 
 networks:
-  ntools-network:
+  emagine-network:
     driver: bridge
