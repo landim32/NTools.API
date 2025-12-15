@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     container_name: ntools-api
     ports:
-      - "5000:80"
+      - "5001:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Docker
       - MailerSend__MailSender=${MAILERSEND__MAILSENDER}
