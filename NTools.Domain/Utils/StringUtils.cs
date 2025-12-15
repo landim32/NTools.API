@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Numerics;
 using System.Text;
 
@@ -14,15 +15,7 @@ namespace NTools.Domain.Utils
             if (string.IsNullOrEmpty(input))
                 return string.Empty;
 
-            var numeros = new StringBuilder();
-
-            foreach (char c in input)
-            {
-                if (char.IsDigit(c))
-                    numeros.Append(c);
-            }
-
-            return numeros.ToString();
+            return new string(input.Where(char.IsDigit).ToArray());
         }
 
         public static string GenerateShortUniqueString()

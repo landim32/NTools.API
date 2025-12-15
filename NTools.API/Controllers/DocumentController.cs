@@ -22,7 +22,7 @@ namespace BazzucaMedia.API.Controllers
             try
             {
                 var isValid = DocumentoUtils.ValidarCpfOuCnpj(cpfCnpj);
-                _logger.LogInformation("validarCpfOuCnpj: {@cpfCnpj}={@isValid}", cpfCnpj, isValid);
+                _logger.LogInformation("validarCpfOuCnpj: {@CpfCnpj}={@IsValid}", cpfCnpj, isValid);
                 return Ok(isValid);
             }
             catch (Exception ex)

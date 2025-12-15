@@ -5,7 +5,7 @@ namespace NTools.Domain.Utils
 {
     public static class ShuffleEx
     {
-        private static Random rng = new Random();
+        private static Random rng = new();
 
         public static void Shuffle<T>(this IList<T> list)
         {

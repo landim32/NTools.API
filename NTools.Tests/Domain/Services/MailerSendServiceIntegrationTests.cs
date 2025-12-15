@@ -32,7 +32,7 @@ namespace NTools.Tests.Domain.Services
             _mockMailSettings.Setup(x => x.Value).Returns(_mailSetting);
         }
 
-        private MailerInfo CreateValidMailerInfo()
+        private static MailerInfo CreateValidMailerInfo()
         {
             return new MailerInfo
             {
