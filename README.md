@@ -9,7 +9,7 @@
 
 ## Overview
 
-NTools API is a comprehensive RESTful API service built with .NET 8 that provides a collection of utility tools and services for common development tasks. The API offers functionalities including document validation (CPF/CNPJ), email services, file management with S3-compatible storage, and string manipulation utilities.
+NTools API is a comprehensive RESTful API service built with .NET 8 that provides a collection of utility tools and services for common development tasks. The API offers functionalities including document validation (CPF/CNPJ), email services, file management with S3-compatible storage, string manipulation utilities, and ChatGPT integration.
 
 The project follows a clean architecture approach with separated layers for API, Application, Domain, ACL (Anti-Corruption Layer), DTOs, and comprehensive test coverage.
 
@@ -31,6 +31,11 @@ Before running the application, you need to configure the environment variables:
     MAILERSEND__MAILSENDER=your-email@example.com
     MAILERSEND__APIURL=https://api.mailersend.com/v1/email
     MAILERSEND__APITOKEN=your-mailersend-api-token
+
+    # ChatGPT Configuration
+    CHATGPT__APIURL=https://api.openai.com/v1/chat/completions
+    CHATGPT__APIKEY=your-openai-api-key
+    CHATGPT__MODEL=gpt-3.5-turbo
 
     # DigitalOcean Spaces (S3) Configuration
     S3__ACCESSKEY=your-digitalocean-spaces-access-key
@@ -106,7 +111,7 @@ After starting the container, the API will be available at:
 
 ## API Documentation
 
-The NTools API provides four main controllers with various endpoints for different utility functions.
+The NTools API provides five main controllers with various endpoints for different utility functions.
 
 ### Document Controller
 
@@ -260,6 +265,121 @@ Generates a short, unique string identifier.
   Response: "x4k9p2"
   ```
 
+### ChatGPT Controller
+
+Integrates with OpenAI's ChatGPT API to provide AI-powered text generation and conversation capabilities.
+
+#### Endpoints
+
+**POST** `/ChatGPT/sendMessage`
+
+Sends a single message to ChatGPT and receives a response.
+
+- **Request Body**: `ChatGPTMessageRequest` object
+  - `message` (string): The message to send
+- **Returns**:
+  - `200 OK` - String containing ChatGPT's response
+  - `500 Internal Server Error` - Error message if request fails
+- **Example**:
+  ```json
+  POST /ChatGPT/sendMessage
+  Content-Type: application/json
+  {
+    "message": "What is the capital of France?"
+  }
+  
+  Response: "The capital of France is Paris."
+  ```
+
+**POST** `/ChatGPT/sendConversation`
+
+Sends a conversation history (multiple messages) to ChatGPT and receives a contextual response.
+
+- **Request Body**: Array of `ChatMessage` objects
+  - `role` (string): The role of the message sender ("user", "assistant", or "system")
+  - `content` (string): The message content
+- **Returns**:
+  - `200 OK` - String containing ChatGPT's response
+  - `500 Internal Server Error` - Error message if request fails
+- **Example**:
+  ```json
+  POST /ChatGPT/sendConversation
+  Content-Type: application/json
+  [
+    {
+      "role": "user",
+      "content": "Hello, who are you?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm ChatGPT, an AI assistant."
+    },
+    {
+      "role": "user",
+      "content": "Can you help me with programming?"
+    }
+  ]
+  
+  Response: "Yes, I'd be happy to help you with programming! What would you like to know?"
+  ```
+
+**POST** `/ChatGPT/sendRequest`
+
+Sends a custom ChatGPT request with full control over parameters.
+
+- **Request Body**: `ChatGPTRequest` object
+  - `model` (string): The GPT model to use (e.g., "gpt-3.5-turbo", "gpt-4", "gpt-4o")
+  - `messages` (array): Array of `ChatMessage` objects
+  - `temperature` (number): Controls randomness (0.0 to 2.0, default: 0.7)
+  - `maxCompletionTokens` (number, optional): Maximum tokens in the response (default: 1000 if not specified)
+- **Returns**:
+  - `200 OK` - Full `ChatGPTResponse` object including usage statistics
+  - `500 Internal Server Error` - Error message if request fails
+- **Note**: The API now uses `max_completion_tokens` for all models as per OpenAI's latest API specifications.
+- **Example**:
+  ```json
+  POST /ChatGPT/sendRequest
+  Content-Type: application/json
+  {
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful programming assistant."
+      },
+      {
+        "role": "user",
+        "content": "Explain what is a REST API"
+      }
+    ],
+    "temperature": 0.7,
+    "maxCompletionTokens": 500
+  }
+  
+  Response:
+  {
+    "id": "chatcmpl-123",
+    "object": "chat.completion",
+    "created": 1677652288,
+    "model": "gpt-4o",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "A REST API (Representational State Transfer Application Programming Interface) is..."
+        },
+        "finishReason": "stop"
+      }
+    ],
+    "usage": {
+      "promptTokens": 25,
+      "completionTokens": 150,
+      "totalTokens": 175
+    }
+  }
+  ```
+
 ## Project Structure
 
 ```
@@ -272,12 +392,86 @@ NTools/
 └── NTools.Tests/        # Comprehensive test suite
 ```
 
+## Architecture
+
+### ACL (Anti-Corruption Layer)
+
+The ACL layer provides client abstractions for interacting with the NTools API endpoints. This allows external applications to consume the API in a type-safe, object-oriented manner.
+
+#### Available Clients
+
+- **DocumentClient** - CPF/CNPJ validation
+- **MailClient** - Email validation and sending
+- **FileClient** - File upload and URL retrieval
+- **StringClient** - String manipulation utilities
+- **ChatGPTClient** - ChatGPT integration
+
+#### ChatGPTClient Usage Example
+
+```csharp
+// Configure in Startup.cs or Program.cs
+services.Configure<NToolSetting>(configuration.GetSection("NTool"));
+services.AddHttpClient<IChatGPTClient, ChatGPTClient>();
+
+// Inject and use
+public class MyService
+{
+    private readonly IChatGPTClient _chatGPTClient;
+
+    public MyService(IChatGPTClient chatGPTClient)
+    {
+        _chatGPTClient = chatGPTClient;
+    }
+
+    public async Task<string> AskQuestion(string question)
+    {
+        // Simple message
+        var response = await _chatGPTClient.SendMessageAsync(question);
+        return response;
+    }
+
+    public async Task<string> ContinueConversation()
+    {
+        // Conversation with context
+        var messages = new List<ChatMessage>
+        {
+            new ChatMessage { Role = "system", Content = "You are a helpful assistant" },
+            new ChatMessage { Role = "user", Content = "What is AI?" },
+            new ChatMessage { Role = "assistant", Content = "AI is Artificial Intelligence..." },
+            new ChatMessage { Role = "user", Content = "Tell me more" }
+        };
+        
+        var response = await _chatGPTClient.SendConversationAsync(messages);
+        return response;
+    }
+
+    public async Task<ChatGPTResponse> CustomRequest()
+    {
+        // Full control over parameters
+        var request = new ChatGPTRequest
+        {
+            Model = "gpt-4o",
+            Messages = new List<ChatMessage>
+            {
+                new ChatMessage { Role = "user", Content = "Explain REST APIs" }
+            },
+            Temperature = 0.5,
+            MaxCompletionTokens = 500
+        };
+        
+        var response = await _chatGPTClient.SendRequestAsync(request);
+        return response;
+    }
+}
+```
+
 ## Development
 
 ### Prerequisites
 - .NET 8.0 SDK
 - Docker and Docker Compose
 - MailerSend API account
+- OpenAI API account (for ChatGPT integration)
 - DigitalOcean Spaces (or S3-compatible storage) account`
 
 ## License
@@ -286,4 +480,4 @@ This project is licensed under the terms specified in the repository.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request.Contributions are welcome! Please feel free to submit a Pull Request.

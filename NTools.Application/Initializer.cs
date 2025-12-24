@@ -20,8 +20,8 @@ namespace NTools.Application
 
             injectDependency(typeof(IFileService), typeof(FileService), services, scoped);
             
-            // Registra MailerSendService com HttpClient tipado
             services.AddHttpClient<IMailerSendService, MailerSendService>();
+            services.AddHttpClient<IChatGPTService, ChatGPTService>();
         }
     }
 }

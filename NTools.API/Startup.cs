@@ -28,6 +28,7 @@ namespace NTools.API
         {
             services.Configure<MailerSendSetting>(Configuration.GetSection("MailerSend"));
             services.Configure<S3Setting>(Configuration.GetSection("S3"));
+            services.Configure<ChatGPTSetting>(Configuration.GetSection("ChatGPT"));
 
             Initializer.Configure(services, Configuration.GetConnectionString("NAuthContext"));
 
