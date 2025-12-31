@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using NTools.ACL.Interfaces;
 using NTools.DTO.Settings;
 
@@ -35,7 +34,7 @@ namespace NTools.ACL
             
             _logger.LogInformation("Response received: {Response}", json);
             
-            return JsonConvert.DeserializeObject<string>(json) ?? string.Empty;
+            return json ?? string.Empty;
         }
 
         public async Task<string> UploadFileAsync(string bucketName, IFormFile file)
@@ -56,7 +55,7 @@ namespace NTools.ACL
                     
                     _logger.LogInformation("Upload response received: {Response}", json);
                     
-                    return JsonConvert.DeserializeObject<string>(json) ?? string.Empty;
+                    return json ?? string.Empty;
                 }
             }
         }
