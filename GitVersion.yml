@@ -4,7 +4,6 @@ branches:
     increment: Patch
     regex: ^master$|^main$
     tag: ''
-    prevent-increment-of-merged-branch-version: true
     track-merge-target: false
     source-branches: ['develop', 'release']
     is-release-branch: true
@@ -36,4 +35,3 @@ no-bump-message: '\+semver:\s?(none|skip)'
 tag-prefix: '[vV]'
 ignore:
   sha: []
-merge-message-formats: {}
