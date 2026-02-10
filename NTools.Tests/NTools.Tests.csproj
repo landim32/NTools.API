@@ -26,7 +26,6 @@
   <ItemGroup>
     <ProjectReference Include="..\NTools.API\NTools.API.csproj" />
     <ProjectReference Include="..\NTools.Domain\NTools.Domain.csproj" />
-    <ProjectReference Include="..\NTools.DTO\NTools.DTO.csproj" />
   </ItemGroup>
 
 </Project>

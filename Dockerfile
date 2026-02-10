@@ -5,18 +5,14 @@ WORKDIR /src
 # Copy csproj files and restore dependencies
 COPY ["NTools.API/NTools.API.csproj", "NTools.API/"]
 COPY ["NTools.Application/NTools.Application.csproj", "NTools.Application/"]
-COPY ["NTools.ACL/NTools.ACL.csproj", "NTools.ACL/"]
 COPY ["NTools.Domain/NTools.Domain.csproj", "NTools.Domain/"]
-COPY ["NTools.DTO/NTools.DTO.csproj", "NTools.DTO/"]
 
 RUN dotnet restore "NTools.API/NTools.API.csproj"
 
 # Copy only necessary source code (exclude tests, docs, and sensitive files)
 COPY ["NTools.API/", "NTools.API/"]
 COPY ["NTools.Application/", "NTools.Application/"]
-COPY ["NTools.ACL/", "NTools.ACL/"]
 COPY ["NTools.Domain/", "NTools.Domain/"]
-COPY ["NTools.DTO/", "NTools.DTO/"]
 
 # Build the application (disable package generation for Docker build)
 WORKDIR "/src/NTools.API"

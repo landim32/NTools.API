@@ -1,17 +1,17 @@
 ﻿# NTools API
 
 ![.NET](https://img.shields.io/badge/.NET-8.0-blue)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools&metric=alert_status)](https://sonarcloud.io/project/overview?id=landim32_NTools)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools&metric=coverage)](https://sonarcloud.io/project/overview?id=landim32_NTools)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools&metric=bugs)](https://sonarcloud.io/project/overview?id=landim32_NTools)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools&metric=code_smells)](https://sonarcloud.io/project/overview?id=landim32_NTools)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools&metric=vulnerabilities)](https://sonarcloud.io/project/overview?id=landim32_NTools)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools.API&metric=alert_status)](https://sonarcloud.io/project/overview?id=landim32_NTools.API)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools.API&metric=coverage)](https://sonarcloud.io/project/overview?id=landim32_NTools.API)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools.API&metric=bugs)](https://sonarcloud.io/project/overview?id=landim32_NTools.API)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools.API&metric=code_smells)](https://sonarcloud.io/project/overview?id=landim32_NTools.API)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=landim32_NTools.API&metric=vulnerabilities)](https://sonarcloud.io/project/overview?id=landim32_NTools.API)
 
 ## Overview
 
 NTools API is a comprehensive RESTful API service built with .NET 8 that provides a collection of utility tools and services for common development tasks. The API offers functionalities including document validation (CPF/CNPJ), email services, file management with S3-compatible storage, string manipulation utilities, and ChatGPT integration.
 
-The project follows a clean architecture approach with separated layers for API, Application, Domain, ACL (Anti-Corruption Layer), DTOs, and comprehensive test coverage.
+The project follows a clean architecture approach with separated layers for API, Application, Domain, and comprehensive test coverage. The ACL (Anti-Corruption Layer) and DTOs are available as separate NuGet packages.
 
 ## Environment Configuration
 
@@ -383,87 +383,17 @@ Sends a custom ChatGPT request with full control over parameters.
 ## Project Structure
 
 ```
-NTools/
+NTools.API/
 ├── NTools.API/           # Web API layer with controllers and configuration
 ├── NTools.Application/   # Application layer with dependency injection setup
 ├── NTools.Domain/        # Domain layer with business logic and services
-├── NTools.ACL/          # Anti-Corruption Layer for external services
-├── NTools.DTO/          # Data Transfer Objects
-└── NTools.Tests/        # Comprehensive test suite
+└── NTools.Tests/         # Comprehensive test suite
 ```
 
-## Architecture
+### NuGet Dependencies
 
-### ACL (Anti-Corruption Layer)
-
-The ACL layer provides client abstractions for interacting with the NTools API endpoints. This allows external applications to consume the API in a type-safe, object-oriented manner.
-
-#### Available Clients
-
-- **DocumentClient** - CPF/CNPJ validation
-- **MailClient** - Email validation and sending
-- **FileClient** - File upload and URL retrieval
-- **StringClient** - String manipulation utilities
-- **ChatGPTClient** - ChatGPT integration
-
-#### ChatGPTClient Usage Example
-
-```csharp
-// Configure in Startup.cs or Program.cs
-services.Configure<NToolSetting>(configuration.GetSection("NTool"));
-services.AddHttpClient<IChatGPTClient, ChatGPTClient>();
-
-// Inject and use
-public class MyService
-{
-    private readonly IChatGPTClient _chatGPTClient;
-
-    public MyService(IChatGPTClient chatGPTClient)
-    {
-        _chatGPTClient = chatGPTClient;
-    }
-
-    public async Task<string> AskQuestion(string question)
-    {
-        // Simple message
-        var response = await _chatGPTClient.SendMessageAsync(question);
-        return response;
-    }
-
-    public async Task<string> ContinueConversation()
-    {
-        // Conversation with context
-        var messages = new List<ChatMessage>
-        {
-            new ChatMessage { Role = "system", Content = "You are a helpful assistant" },
-            new ChatMessage { Role = "user", Content = "What is AI?" },
-            new ChatMessage { Role = "assistant", Content = "AI is Artificial Intelligence..." },
-            new ChatMessage { Role = "user", Content = "Tell me more" }
-        };
-        
-        var response = await _chatGPTClient.SendConversationAsync(messages);
-        return response;
-    }
-
-    public async Task<ChatGPTResponse> CustomRequest()
-    {
-        // Full control over parameters
-        var request = new ChatGPTRequest
-        {
-            Model = "gpt-4o",
-            Messages = new List<ChatMessage>
-            {
-                new ChatMessage { Role = "user", Content = "Explain REST APIs" }
-            },
-            Temperature = 0.5,
-            MaxCompletionTokens = 500
-        };
-        
-        var response = await _chatGPTClient.SendRequestAsync(request);
-        return response;
-    }
-}
-```
+- **[NTools.DTO](https://www.nuget.org/packages/NTools.DTO/)** - Data Transfer Objects ([GitHub](https://github.com/landim32/NTools.DTO))
+- **[NTools.ACL](https://www.nuget.org/packages/NTools.ACL/)** - Anti-Corruption Layer clients ([GitHub](https://github.com/landim32/NTools.ACL))
 
 ## Development
 

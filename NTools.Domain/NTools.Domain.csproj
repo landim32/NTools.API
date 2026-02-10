@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NTools.DTO\NTools.DTO.csproj" />
+    <PackageReference Include="NTools.DTO" Version="0.2.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,23 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DTOs\**" />
-    <Content Remove="DTOs\**" />
-    <EmbeddedResource Remove="DTOs\**" />
-    <None Remove="DTOs\**" />
-    <None Remove="DTO\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Proxies" Version="9.0.8" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+    <PackageReference Include="NTools.ACL" Version="0.2.2" />
+    <PackageReference Include="NTools.DTO" Version="0.2.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\NTools.Application\NTools.Application.csproj" />
-    <ProjectReference Include="..\NTools.ACL\NTools.ACL.csproj" />
     <ProjectReference Include="..\NTools.Domain\NTools.Domain.csproj" />
-    <ProjectReference Include="..\NTools.DTO\NTools.DTO.csproj" />
   </ItemGroup>
 </Project>
